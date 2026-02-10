@@ -13,14 +13,17 @@ class Model(ABC):
     # Will always be called after the model step has been done.
     def on_observation(self, observation: np.ndarray, observed_idx: List[int]) -> Distrubution:
         pass
-    
 
-    @property
-    def mean(self):
+    @abstractmethod
+    def get_title(self, OBS_VARIANCE: np.ndarray, initial_belief_error: np.ndarray) -> str:
+        pass
+
+    @abstractmethod
+    def generate_true_data(self, STEPS: int, TIME_STEP: float, t: np.ndarray) -> np.ndarray:
         pass
 
     @property
-    def covariance(self):
+    def variable_names(self) -> List[str]:
         pass
 
 

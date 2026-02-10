@@ -1,51 +1,45 @@
 import numpy as np
-from scipy.linalg import expm 
-from distrubutions import *
+import sys, argparse
 import random
+
 
 #region Simulation Config
 TIME_STEP = 0.005
 TIME_PERIOD = 30 # seconds
 STEPS = int(TIME_PERIOD / TIME_STEP)
-NUM_VARIABLES = 3
 RNG_SEED = 1 # Keep a constant to have RNG the exact same across runs - still random but will be consitent
 # RNG_SEED = random.randint(0, 1_000_000) 
 rng = np.random.default_rng(RNG_SEED)
 #endregion
 
 #region Model Setup
-from LorenzModel import *
-model = LorenzModel(TIME_STEP, RNG_SEED)
+model_list = ["linear", "lorenz"]
+parser = argparse.ArgumentParser()
+parser.add_argument("-m", "--model", help="Input model name to run e.g. -m lorenz")
+parser.add_argument("-l", "--list-models", action="store_true", help="Lists all available models")
+args = parser.parse_args()
+
+from models import linear_gaussian, lorenz_attractor
+match args.model:
+    case "lorenz":
+        model = lorenz_attractor.LorenzModel(TIME_STEP, RNG_SEED)
+    case "linear":
+        model = linear_gaussian.LinearGaussianModel(TIME_STEP, RNG_SEED)
+
+if args.list_models:
+    for i, m in enumerate(model_list):
+        print(f'{i+1}. {m}')
+    sys.exit()
+
+
+NUM_VARIABLES = model.NUM_VARIABLES
 # from LinearGaussianModel import *
 # model = LinearGaussianModel(TIME_STEP, RNG_SEED)
 #endregion
 
 #region True Data
-TRUE_INTITIAL = np.array([1.0, 2.0, 3.0])
 t = np.arange(STEPS) * TIME_STEP
-true_state = np.zeros((STEPS, 3))
-true_state[0] = TRUE_INTITIAL
-
-def lorenz(vec):
-    o, r, b = [10, 28, 8/3]
-    x, y, z = vec
-    ds = np.array([
-        o*(y - x),
-        x*(r-z) - y,
-        x*y - b*z
-    ]) * TIME_STEP
-    res = vec + ds
-    return res
-
-for i in range(1, len(true_state)):
-    true_state[i] = lorenz(true_state[i-1])
-
-# TRUE_INTITIAL = np.array([1.0, 1.0, 1.0])
-# t = np.arange(STEPS) * TIME_STEP
-# true_state = np.zeros((STEPS, 3))
-
-# for i in range(0, len(true_state)):
-#     true_state[i] = expm(model.A*t[i]) @ TRUE_INTITIAL
+true_state = model.generate_true_data(STEPS, TIME_STEP, t)
 #endregion
 
 #region Observations
@@ -130,9 +124,7 @@ for k in range(STEPS):
         obs_array[k, observed_idx_list[k]] = observations[k]
 
 from plot import plot_N_variables
-title = f'Lorenz EnKF (Particle No. = {model.NUM_PARTICLES} R={OBS_VARIANCE}, Initial Guess Error (%) {initial_belief_error})'
-# title = f'Linear Oscillator KF (R={OBS_VARIANCE}, Initial Guess Error (%) {initial_belief_error})'
-VARIABLE_NAMES = ["X", "Y", "Z"]
-plot_N_variables(mu, obs_array, true_state, t, NUM_VARIABLES, title, VARIABLE_NAMES)
+title = model.get_title(OBS_VARIANCE, initial_belief_error)
+plot_N_variables(mu, obs_array, true_state, t, NUM_VARIABLES, title, model.variable_names)
 #endregion
 

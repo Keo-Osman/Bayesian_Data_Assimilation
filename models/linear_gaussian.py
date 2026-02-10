@@ -1,7 +1,7 @@
-from model import *
+from models.abstract_model import *
 from distrubutions import *
 from scipy.linalg import expm 
-import LinearKalmanFilter as KF
+import filters.linear_kalman_filter as KF
 
 # Models a oscilation with 3 variables
 # Equation of d/dt(v) = Av
@@ -55,5 +55,22 @@ class LinearGaussianModel(Model):
         KF.update(self.distrubution, observation, H, R_k, self.rng)
         
         return self.distrubution
+    
+    def generate_true_data(self, STEPS: int, TIME_STEP: float, t: np.ndarray) -> np.ndarray:
+        TRUE_INTITIAL = np.array([1.0, 1.0, 1.0])
+        true_state = np.zeros((STEPS, 3))
+
+        for i in range(0, len(true_state)):
+            true_state[i] = expm(self.A*t[i]) @ TRUE_INTITIAL
+
+        return true_state
+
+
+    def get_title(self, OBS_VARIANCE: np.ndarray, initial_belief_error: np.ndarray) -> str:
+        return f'Linear Oscillator KF (R={OBS_VARIANCE}, Initial Guess Error (%) {initial_belief_error})'
+
+    @property
+    def variable_names(self) -> List[str]:
+        return ["X", "Y", "Z"]
 
 
