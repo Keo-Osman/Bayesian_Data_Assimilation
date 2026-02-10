@@ -1,6 +1,7 @@
 from model import *
 from distrubutions import *
 from scipy.linalg import expm 
+import LinearKalmanFilter as KF
 
 # Models a oscilation with 3 variables
 # Equation of d/dt(v) = Av
@@ -12,9 +13,10 @@ from scipy.linalg import expm
 # Observation noise intepreted as normals centered on true value
 
 class LinearGaussianModel(Model):
-    def __init__(self, timestep):
+    def __init__(self, timestep: float, rng: np.random.Generator):
         self.NUM_VARIABLES = 3
         self.TIME_STEP = timestep
+        self.rng = rng
         
         # Parameters 
         self.a = 0.5
@@ -39,15 +41,10 @@ class LinearGaussianModel(Model):
             [0, 0, 10]
         ]) # Initial covariance, no assumptions about correlations e.g the off diagonal elements
         
-        self.prediction = Gaussian(mu, P)
+        self.distrubution = Gaussian(mu, P)
 
-    def model_step(self, state_prev: Gaussian) -> Gaussian:
-        # Apply transition state matrix
-        self.prediction.mean = self.F @ state_prev.mean
-
-        # P = FPF^T + Q 
-        self.prediction.covariance = ((self.F @ state_prev.covariance) @ self.F.T) + self.Q
-        return self.prediction
+    def model_step(self) -> Gaussian:
+        KF.propagate(self.distrubution, self.F, self.Q)
     
     # Will always be called after the model step has been done.
     def on_observation(self, observation: np.ndarray, observed_idx: List[int]) -> Gaussian:
@@ -55,14 +52,8 @@ class LinearGaussianModel(Model):
         H = np.eye(self.NUM_VARIABLES)[observed_idx, :]
         R_k = self.R[np.ix_(observed_idx, observed_idx)]
         
-        # Multiplying the two normals: Prior belief ~ N(mu_pred, P), Likelihood ~ N(H*observations[k], R_k)
-        P_inv = np.linalg.inv(self.prediction.covariance)
-        R_inv = np.linalg.inv(R_k)
-        # Cov = (P^-1 + H^T*R^-1*H)^-1
-        self.prediction.covariance = np.linalg.inv(P_inv + H.T @ R_inv @ H)
-        # mu = Cov * (P^-1*mu_prev + H^T*R^-1*Observation)
-        self.prediction.mean = self.prediction.covariance @ (P_inv @ self.prediction.mean + H.T @ R_inv @ observation)
+        KF.update(self.distrubution, observation, H, R_k, self.rng)
         
-        return self.prediction
+        return self.distrubution
 
 

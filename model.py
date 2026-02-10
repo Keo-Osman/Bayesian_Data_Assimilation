@@ -6,12 +6,21 @@ from typing import List
 
 class Model(ABC):
     @abstractmethod
-    def model_step(self, state_prev: Distrubution, dt: float) -> Distrubution:
+    def model_step(self) -> Distrubution:
         pass
     
     @abstractmethod
     # Will always be called after the model step has been done.
     def on_observation(self, observation: np.ndarray, observed_idx: List[int]) -> Distrubution:
+        pass
+    
+
+    @property
+    def mean(self):
+        pass
+
+    @property
+    def covariance(self):
         pass
 
 
