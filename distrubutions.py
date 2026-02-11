@@ -5,7 +5,7 @@ from enum import Enum
 class DistrubutionType(Enum):
     GAUSSIAN = 1
 
-class Distrubution(ABC):
+class Distribution(ABC):
     # @abstractmethod
     # def sample(self, rng: np.random.Generator) -> np.ndarray:
     #     pass
@@ -19,7 +19,7 @@ class Distrubution(ABC):
     def covariance() -> np.ndarray:
         pass
 
-class Gaussian(Distrubution):
+class Gaussian(Distribution):
     def __init__(self, mean: np.ndarray, covariance):
         self._mean = mean
         self._covariance = covariance
@@ -36,7 +36,7 @@ class Gaussian(Distrubution):
     
 
 
-class ParticleDistrubution(Distrubution):
+class ParticleDistribution(Distribution):
     def __init__(self, particles: np.ndarray):
         # Particles is an array of shape (NUM_PARTICLES, NUM_VARIABLES)
         self.particles = particles

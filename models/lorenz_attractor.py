@@ -16,7 +16,7 @@ class LorenzModel(Model):
 
         self.NUM_PARTICLES = 50
         initial_particles = self.rng.multivariate_normal(mu0, P0, self.NUM_PARTICLES)
-        self.distrubution = ParticleDistrubution(initial_particles)
+        self.distrubution = ParticleDistribution(initial_particles)
 
     # state_prev is an array of particles, each particle is an array of state variables
     def model_step(self):

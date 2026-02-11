@@ -12,7 +12,7 @@ RNG_SEED = 1 # Keep a constant to have RNG the exact same across runs - still ra
 rng = np.random.default_rng(RNG_SEED)
 #endregion
 
-#region Model Setup
+#region Command Line Arguments and Model Setup
 model_list = ["linear", "lorenz"]
 parser = argparse.ArgumentParser()
 parser.add_argument("-m", "--model", help="Input model name to run e.g. -m lorenz")
@@ -33,8 +33,6 @@ if args.list_models:
 
 
 NUM_VARIABLES = model.NUM_VARIABLES
-# from LinearGaussianModel import *
-# model = LinearGaussianModel(TIME_STEP, RNG_SEED)
 #endregion
 
 #region True Data
@@ -127,4 +125,3 @@ from plot import plot_N_variables
 title = model.get_title(OBS_VARIANCE, initial_belief_error)
 plot_N_variables(mu, obs_array, true_state, t, NUM_VARIABLES, title, model.variable_names)
 #endregion
-

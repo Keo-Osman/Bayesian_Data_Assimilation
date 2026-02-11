@@ -1,12 +1,12 @@
 from distrubutions import *
 
 
-def propagate(distrubution: ParticleDistrubution, function):
+def propagate(distrubution: ParticleDistribution, function):
     for i, particle in enumerate(distrubution.particles):
         distrubution.particles[i] = function(particle)
 
 
-def update(distrubution: ParticleDistrubution, observation: np.ndarray, 
+def update(distrubution: ParticleDistribution, observation: np.ndarray, 
            H: np.ndarray, R: np.ndarray, rng: np.random.Generator):
     
     cov = distrubution.covariance
