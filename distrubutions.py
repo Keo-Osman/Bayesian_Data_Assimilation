@@ -1,9 +1,6 @@
 from abc import ABC, abstractmethod
 import numpy as np
-from enum import Enum
 
-class DistrubutionType(Enum):
-    GAUSSIAN = 1
 
 class Distribution(ABC):
     # @abstractmethod

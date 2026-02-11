@@ -1,6 +1,6 @@
 from models.abstract_model import *
 from distrubutions import *
-import filters.extended_kalman_filter as EnKF 
+import filters.ensemble_kalman_filter as EnKF 
 
 class LorenzModel(Model):
     def __init__(self, timestep: float, rng_seed: int):
