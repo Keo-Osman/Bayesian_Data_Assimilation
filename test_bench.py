@@ -1,6 +1,7 @@
 import numpy as np
 import sys, argparse
 import random
+import time
 
 
 #region Simulation Config
@@ -31,16 +32,23 @@ if args.list_models:
         print(f'{i+1}. {m}')
     sys.exit()
 
+print(f'Running {model.name}')
 
 NUM_VARIABLES = model.NUM_VARIABLES
 #endregion
 
 #region True Data
+start = time.perf_counter()
+
 t = np.arange(STEPS) * TIME_STEP
 true_state = model.generate_true_data(STEPS, TIME_STEP, t)
+
+end = time.perf_counter()
+print(f'Generating true data took {end - start:.2g}s')
 #endregion
 
 #region Observations
+start = time.perf_counter()
 # Compute per-timestep observation probability. Keeps observation frequency density the same independant of TIME_STEP
 obs_freq = np.array([5.0, 5.0, 5.0])  
 p_obs = 1.0 - np.exp(-obs_freq * TIME_STEP)
@@ -70,14 +78,17 @@ for k in range(STEPS):
 
     observations[k] = obs_values_noisy
     observed_idx_list[k] = observed_idx
+
+end = time.perf_counter()
+print(f'Generating observation data took {end - start:.2g}s')
 #endregion
 
 #region Initial Beliefs
 mu = np.zeros_like(true_state)
-mu[0] = model.distrubution.mean
+mu[0] = model.distribution.mean
 
 P = np.zeros((STEPS, NUM_VARIABLES, NUM_VARIABLES))
-P[0] = model.distrubution.covariance
+P[0] = model.distribution.covariance
 
 initial_belief_error = np.zeros((NUM_VARIABLES))
 for i in range(0, NUM_VARIABLES):
@@ -93,11 +104,12 @@ for i in range(0, NUM_VARIABLES):
 #endregion
 
 #region Core Loop
+start = time.perf_counter()
 for k in range(1, STEPS):
     # Forecast
     model.model_step()
-    mu_pred = model.distrubution.mean
-    P_pred = model.distrubution.covariance 
+    mu_pred = model.distribution.mean
+    P_pred = model.distribution.covariance 
 
 
     # Update
@@ -107,11 +119,14 @@ for k in range(1, STEPS):
         # P_forecast[k] = P_pred
 
         model.on_observation(observations[k], observed_idx_list[k])
-        mu[k] = model.distrubution.mean
-        P[k] = model.distrubution.covariance
+        mu[k] = model.distribution.mean
+        P[k] = model.distribution.covariance
     else:
         P[k] = P_pred
         mu[k] = mu_pred
+
+end = time.perf_counter()
+print(f'Core loop took {end - start:.4g}s to model {TIME_PERIOD}s ({TIME_PERIOD / (end-start):.4g}x realtime) with a {TIME_STEP} time step ({STEPS} total steps), {(end - start)/STEPS:.4g}s per step.')
 #endregion
 
 #region Plot

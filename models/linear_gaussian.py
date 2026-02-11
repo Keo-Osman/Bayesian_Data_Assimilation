@@ -1,5 +1,5 @@
 from models.abstract_model import *
-from distrubutions import *
+from distributions import *
 from scipy.linalg import expm 
 import filters.linear_kalman_filter as KF
 
@@ -41,20 +41,20 @@ class LinearGaussianModel(Model):
             [0, 0, 10]
         ]) # Initial covariance, no assumptions about correlations e.g the off diagonal elements
         
-        self.distrubution = Gaussian(mu, P)
+        self.distribution = Gaussian(mu, P)
 
-    def model_step(self) -> Gaussian:
-        KF.propagate(self.distrubution, self.F, self.Q)
+    def model_step(self):
+        KF.propagate(self.distribution, self.F, self.Q)
     
     # Will always be called after the model step has been done.
-    def on_observation(self, observation: np.ndarray, observed_idx: List[int]) -> Gaussian:
+    def on_observation(self, observation: np.ndarray, observed_idx: List[int]):
         # Build H and R_k based on observation indices
         H = np.eye(self.NUM_VARIABLES)[observed_idx, :]
         R_k = self.R[np.ix_(observed_idx, observed_idx)]
         
-        KF.update(self.distrubution, observation, H, R_k, self.rng)
+        KF.update(self.distribution, observation, H, R_k, self.rng)
         
-        return self.distrubution
+        return self.distribution
     
     def generate_true_data(self, STEPS: int, TIME_STEP: float, t: np.ndarray) -> np.ndarray:
         TRUE_INTITIAL = np.array([1.0, 1.0, 1.0])
@@ -72,5 +72,9 @@ class LinearGaussianModel(Model):
     @property
     def variable_names(self) -> List[str]:
         return ["X", "Y", "Z"]
+    
+    @property
+    def name(self) -> str:
+        return "Linear Oscillator with Kalman Filter"
 
 

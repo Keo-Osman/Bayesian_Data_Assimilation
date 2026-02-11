@@ -1,5 +1,5 @@
 from models.abstract_model import *
-from distrubutions import *
+from distributions import *
 import filters.ensemble_kalman_filter as EnKF 
 
 class LorenzModel(Model):
@@ -16,7 +16,7 @@ class LorenzModel(Model):
 
         self.NUM_PARTICLES = 50
         initial_particles = self.rng.multivariate_normal(mu0, P0, self.NUM_PARTICLES)
-        self.distrubution = ParticleDistribution(initial_particles)
+        self.distribution = ParticleDistribution(initial_particles)
 
     # state_prev is an array of particles, each particle is an array of state variables
     def model_step(self):
@@ -32,7 +32,7 @@ class LorenzModel(Model):
             res = particle + ds
             return res
         
-        EnKF.propagate(self.distrubution, func)
+        EnKF.propagate(self.distribution, func)
 
         
 
@@ -41,7 +41,7 @@ class LorenzModel(Model):
         H = np.eye(self.NUM_VARIABLES)[observed_idx, :]
         R_k = self.R[np.ix_(observed_idx, observed_idx)]
 
-        EnKF.update(self.distrubution, observation, H, R_k, self.rng)
+        EnKF.update(self.distribution, observation, H, R_k, self.rng)
 
     def generate_true_data(self, STEPS: int, TIME_STEP: float, t: np.ndarray) -> np.ndarray:
         TRUE_INTITIAL = np.array([1.0, 2.0, 3.0])
@@ -70,3 +70,7 @@ class LorenzModel(Model):
     @property
     def variable_names(self) -> List[str]:
         return ["X", "Y", "Z"]
+    
+    @property
+    def name(self) -> str:
+        return "Lorenz Attractor with Ensemble Kalman Filter"
