@@ -9,7 +9,7 @@ class LorenzModel(Model):
         self.rng = np.random.default_rng(rng_seed)
         
         self.parameters = [10, 28, 8/3]
-        self.R = 10 * np.eye(self.NUM_VARIABLES)
+        self.R = 5 * np.eye(self.NUM_VARIABLES)
 
         mu0 = np.array([1.1, 1.8, 6]) # initial belief_mean
         P0 = 5 * np.eye(self.NUM_VARIABLES)  # initial belief covariance
@@ -45,7 +45,7 @@ class LorenzModel(Model):
 
     def generate_true_data(self, STEPS: int, TIME_STEP: float, t: np.ndarray) -> np.ndarray:
         TRUE_INTITIAL = np.array([1.0, 2.0, 3.0])
-        true_state = np.zeros((STEPS, 3))
+        true_state = np.zeros((STEPS, self.NUM_VARIABLES))
         true_state[0] = TRUE_INTITIAL
 
         def lorenz(vec):

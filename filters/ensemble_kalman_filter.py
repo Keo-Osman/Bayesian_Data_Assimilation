@@ -1,6 +1,5 @@
 from distributions import *
 
-
 def propagate(distribution: ParticleDistribution, function):
     for i, particle in enumerate(distribution.particles):
         distribution.particles[i] = function(particle)

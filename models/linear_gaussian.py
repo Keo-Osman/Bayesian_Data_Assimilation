@@ -32,7 +32,7 @@ class LinearGaussianModel(Model):
         
         self.F = expm(self.A * self.TIME_STEP) # Discretise time - State transition matrix
         self.Q = 1e-7 * np.identity(self.NUM_VARIABLES) * self.TIME_STEP # Model noise - covariance matrix
-        self.R = 0.25 * np.eye(self.NUM_VARIABLES) # How model thinks observation noise is distrubuted - covariance matrix of a normal
+        self.R = 5 * np.eye(self.NUM_VARIABLES) # How model thinks observation noise is distrubuted - covariance matrix of a normal
 
         mu = [-1.0, 0.1, 2.3] # Initial Guess
         P = np.array([
@@ -57,7 +57,7 @@ class LinearGaussianModel(Model):
     
     def generate_true_data(self, STEPS: int, TIME_STEP: float, t: np.ndarray) -> np.ndarray:
         TRUE_INTITIAL = np.array([1.0, 1.0, 1.0])
-        true_state = np.zeros((STEPS, 3))
+        true_state = np.zeros((STEPS, self.NUM_VARIABLES))
 
         for i in range(0, len(true_state)):
             true_state[i] = expm(self.A*t[i]) @ TRUE_INTITIAL

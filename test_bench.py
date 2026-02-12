@@ -6,7 +6,7 @@ import time
 
 #region Simulation Config
 TIME_STEP = 0.005
-TIME_PERIOD = 100 # seconds
+TIME_PERIOD = 50 # seconds
 STEPS = int(TIME_PERIOD / TIME_STEP)
 RNG_SEED = 1 # Keep a constant to have RNG the exact same across runs - still random but will be consitent
 # RNG_SEED = random.randint(0, 1_000_000) 
@@ -52,11 +52,14 @@ print(f'Generating true data took {end - start:.2g}s')
 #region Observations
 start = time.perf_counter()
 # Compute per-timestep observation probability. Keeps observation frequency density the same independant of TIME_STEP
-obs_freq = np.array([10.0, 10.0, 10.0])  
+obs_freq = np.zeros(NUM_VARIABLES)
+for i in range(0, len(obs_freq)):
+    obs_freq[i] = 5.0
+  
 p_obs = 1.0 - np.exp(-obs_freq * TIME_STEP)
 
 # Observation noise covariance
-OBS_VARIANCE = 1.0
+OBS_VARIANCE = 5.0
 R = OBS_VARIANCE * np.eye(NUM_VARIABLES)
 
 observations = [None] * STEPS
