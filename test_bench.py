@@ -6,7 +6,7 @@ import time
 
 #region Simulation Config
 TIME_STEP = 0.005
-TIME_PERIOD = 30 # seconds
+TIME_PERIOD = 100 # seconds
 STEPS = int(TIME_PERIOD / TIME_STEP)
 RNG_SEED = 1 # Keep a constant to have RNG the exact same across runs - still random but will be consitent
 # RNG_SEED = random.randint(0, 1_000_000) 
@@ -14,16 +14,18 @@ rng = np.random.default_rng(RNG_SEED)
 #endregion
 
 #region Command Line Arguments and Model Setup
-model_list = ["linear", "lorenz"]
+model_list = ["linear", "lorenz-EnKF", "lorenz-EKF"]
 parser = argparse.ArgumentParser()
 parser.add_argument("-m", "--model", help="Input model name to run e.g. -m lorenz")
 parser.add_argument("-l", "--list-models", action="store_true", help="Lists all available models")
 args = parser.parse_args()
 
-from models import linear_gaussian, lorenz_attractor
+from models import linear_gaussian, lorenz_attractor_EnKF, lorenz_attractor_EKF
 match args.model:
-    case "lorenz":
-        model = lorenz_attractor.LorenzModel(TIME_STEP, RNG_SEED)
+    case "lorenz-EnKF":
+        model = lorenz_attractor_EnKF.LorenzModel(TIME_STEP, RNG_SEED)
+    case "lorenz-EKF":
+        model = lorenz_attractor_EKF.LorenzModel(TIME_STEP, RNG_SEED)
     case "linear":
         model = linear_gaussian.LinearGaussianModel(TIME_STEP, RNG_SEED)
 
@@ -50,12 +52,12 @@ print(f'Generating true data took {end - start:.2g}s')
 #region Observations
 start = time.perf_counter()
 # Compute per-timestep observation probability. Keeps observation frequency density the same independant of TIME_STEP
-obs_freq = np.array([5.0, 5.0, 5.0])  
+obs_freq = np.array([10.0, 10.0, 10.0])  
 p_obs = 1.0 - np.exp(-obs_freq * TIME_STEP)
 
 # Observation noise covariance
-OBS_VARIANCE = 10
-R = OBS_VARIANCE  * np.eye(NUM_VARIABLES)
+OBS_VARIANCE = 1.0
+R = OBS_VARIANCE * np.eye(NUM_VARIABLES)
 
 observations = [None] * STEPS
 # For each observation keeps track of the indices that correspond to which values where observed

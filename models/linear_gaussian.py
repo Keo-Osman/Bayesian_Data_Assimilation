@@ -52,7 +52,7 @@ class LinearGaussianModel(Model):
         H = np.eye(self.NUM_VARIABLES)[observed_idx, :]
         R_k = self.R[np.ix_(observed_idx, observed_idx)]
         
-        KF.update(self.distribution, observation, H, R_k, self.rng)
+        KF.update(self.distribution, observation, H, R_k)
         
     
     def generate_true_data(self, STEPS: int, TIME_STEP: float, t: np.ndarray) -> np.ndarray:

@@ -8,8 +8,7 @@ def propagate(distribution: Gaussian, F: np.ndarray, Q: np.ndarray):
 
 
 def update(distribution: Gaussian, observation : np.ndarray, 
-           H: np.ndarray, R: np.ndarray, rng: np.random.Generator):
-    
+           H: np.ndarray, R: np.ndarray):
 
     P = distribution.covariance
     mu = distribution.mean
@@ -21,7 +20,7 @@ def update(distribution: Gaussian, observation : np.ndarray,
 
     y = observation - H @ mu
     distribution._mean = mu + K @ y
-    
+
     I = np.eye(P.shape[0])
     distribution._covariance = (I - K @ H) @ P
 
