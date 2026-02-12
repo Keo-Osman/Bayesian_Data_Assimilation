@@ -15,5 +15,5 @@ def update(distribution: ParticleDistribution, observation: np.ndarray,
     # K = cov @ H.T @ np.linalg.pinv(S)
 
     for i, particle in enumerate(distribution.particles):
-        y = observation + rng.multivariate_normal(np.zeros(len(observation)), R)
-        distribution.particles[i] += K @ (y - H @ particle)
+        z = observation + rng.multivariate_normal(np.zeros(len(observation)), R)
+        distribution.particles[i] += K @ (z - H @ particle)

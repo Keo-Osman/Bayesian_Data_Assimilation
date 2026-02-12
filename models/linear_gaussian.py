@@ -54,7 +54,6 @@ class LinearGaussianModel(Model):
         
         KF.update(self.distribution, observation, H, R_k, self.rng)
         
-        return self.distribution
     
     def generate_true_data(self, STEPS: int, TIME_STEP: float, t: np.ndarray) -> np.ndarray:
         TRUE_INTITIAL = np.array([1.0, 1.0, 1.0])
