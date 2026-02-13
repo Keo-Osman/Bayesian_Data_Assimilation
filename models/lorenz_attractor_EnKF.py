@@ -3,22 +3,6 @@ from distributions import *
 import filters.ensemble_kalman_filter as EnKF 
 
 class LorenzModel(Model):
-    def __init__(self, timestep: float, rng_seed: int):
-        self.dt = timestep
-        self.NUM_VARIABLES = 3
-        self.rng = np.random.default_rng(rng_seed)
-        
-        self.parameters = [10, 28, 8/3]
-        self.R = 5 * np.eye(self.NUM_VARIABLES)
-
-        mu0 = np.array([1.1, 1.8, 6]) # initial belief_mean
-        P0 = 5 * np.eye(self.NUM_VARIABLES)  # initial belief covariance
-
-        self.NUM_PARTICLES = 50
-        initial_particles = self.rng.multivariate_normal(mu0, P0, self.NUM_PARTICLES)
-        self.distribution = ParticleDistribution(initial_particles)
-
-    # state_prev is an array of particles, each particle is an array of state variables
     def model_step(self):
         o, r, b = self.parameters
 
@@ -34,7 +18,6 @@ class LorenzModel(Model):
         
         EnKF.propagate(self.distribution, func)
 
-        
 
     def on_observation(self, observation, observed_idx):
         # Build H and R_k based on observation indices
@@ -43,10 +26,29 @@ class LorenzModel(Model):
 
         EnKF.update(self.distribution, observation, H, R_k, self.rng)
 
+    def __init__(self, timestep: float, rng_seed: int):
+        self.dt = timestep
+        self.NUM_VARIABLES = 3
+        self.rng = np.random.default_rng(rng_seed)
+        
+        self.parameters = [10, 28, 8/3]
+        self.NUM_PARTICLES = 50
+        self.TRUE_INITIAL = np.array([1.2, -3 , 4.0]) # Default true value, may be overriden by cmdline arguments in initialise()
+        
+    def initialise(self, R: np.ndarray, initial_value: np.ndarray, initial_covariance: np.ndarray, true_initial: np.ndarray):
+        self.R = R
+        self.TRUE_INITIAL = true_initial
+
+        mu0 = initial_value
+        P0 = initial_covariance
+
+        
+        initial_particles = self.rng.multivariate_normal(mu0, P0, self.NUM_PARTICLES)
+        self.distribution = ParticleDistribution(initial_particles)
+
     def generate_true_data(self, STEPS: int, TIME_STEP: float, t: np.ndarray) -> np.ndarray:
-        TRUE_INTITIAL = np.array([1.0, 2.0, 3.0])
         true_state = np.zeros((STEPS, self.NUM_VARIABLES))
-        true_state[0] = TRUE_INTITIAL
+        true_state[0] = self.TRUE_INITIAL
 
         def lorenz(vec):
             o, r, b = [10, 28, 8/3]

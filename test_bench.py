@@ -18,7 +18,40 @@ model_list = ["linear", "lorenz-EnKF", "lorenz-EKF"]
 parser = argparse.ArgumentParser()
 parser.add_argument("-m", "--model", help="Input model name to run e.g. -m lorenz")
 parser.add_argument("-l", "--list-models", action="store_true", help="Lists all available models")
+parser.add_argument(
+    '-R',
+    nargs='+',        
+    type=float,
+)
+parser.add_argument(
+    '-P',
+    nargs='+',        
+    type=float,
+)
+parser.add_argument(
+    '-T',
+    nargs='+',        
+    type=float,
+)
+parser.add_argument(
+    '-E',
+    nargs='+',        
+    type=float,
+)
+parser.add_argument(
+    '-O',
+    nargs='+',        
+    type=float,
+)
 args = parser.parse_args()
+
+if (args.list_models):
+    for i, m in enumerate(model_list):
+        print(f'{i+1}. {m}')
+    sys.exit()
+
+
+
 
 from models import linear_gaussian, lorenz_attractor_EnKF, lorenz_attractor_EKF
 match args.model:
@@ -28,15 +61,72 @@ match args.model:
         model = lorenz_attractor_EKF.LorenzModel(TIME_STEP, RNG_SEED)
     case "linear":
         model = linear_gaussian.LinearGaussianModel(TIME_STEP, RNG_SEED)
+NUM_VARIABLES = model.NUM_VARIABLES
+if (args.R):
+    if(len(args.R) == 1):
+        R = args.R[0] * np.eye(NUM_VARIABLES)
+    elif(len(args.R) != NUM_VARIABLES):
+        print(f'R should have {NUM_VARIABLES} variables!')
+        sys.exit()
+    else:
+        R = np.diag(args.R)
+else:
+    R = 2 * np.eye(NUM_VARIABLES)
+    
+if (args.P):
+    if(len(args.P) == 1):
+        P = args.P[0] * np.eye(NUM_VARIABLES)
+    elif(len(args.P) != NUM_VARIABLES):
+        print(f'P should have {NUM_VARIABLES} variables!')
+        sys.exit()
+    else:
+        P = np.diag(args.P)
+else:
+    P = 2 * np.eye(NUM_VARIABLES)
 
-if args.list_models:
-    for i, m in enumerate(model_list):
-        print(f'{i+1}. {m}')
-    sys.exit()
+if (args.T):
+    if(len(args.T) == 1):
+        true_initial = np.full(NUM_VARIABLES, args.T[0])
+    elif (len(args.T) != NUM_VARIABLES):
+        print(f'T should have {NUM_VARIABLES} variables!')
+        sys.exit()
+    else:
+        true_initial = args.T
+else:
+    true_initial = model.TRUE_INITIAL
+
+if (args.E):
+    if (len(args.E) == 1):
+        initial_belief_error = np.full(NUM_VARIABLES, args.E[0])
+    elif (len(args.E) != NUM_VARIABLES):
+        print(f'initial_belief_error should have {NUM_VARIABLES} variables!')
+        sys.exit()
+    else:
+        initial_belief_error = np.array(args.E)
+else:
+    initial_belief_error = np.full(NUM_VARIABLES, 0.1)
+
+initial_value = np.zeros_like(true_initial)
+for i, val in enumerate(true_initial):
+    initial_value[i] = val * (1 + initial_belief_error[i]) 
+
+model.initialise(R, initial_value, P, true_initial)
+
+if (args.O):
+    if(len(args.O) == 1):
+        obs_freq = np.full(NUM_VARIABLES, args.O[0])
+    elif (len(args.O) != NUM_VARIABLES):
+        print(f'obs_freq should have {NUM_VARIABLES} variables!')
+        sys.exit()
+    else:
+        obs_freq = np.array(args.O)
+else:
+    obs_freq = np.full(NUM_VARIABLES, 2.0)
 
 print(f'Running {model.name}')
+print(f'R = \n{R} \n\nInitial Belief Error = \n{initial_belief_error}\n\nTrue Initial =\n {true_initial} \n\nobs_freq =\n {obs_freq} \n\nP =\n {P}')
 
-NUM_VARIABLES = model.NUM_VARIABLES
+
 #endregion
 
 #region True Data
@@ -51,16 +141,9 @@ print(f'Generating true data took {end - start:.2g}s')
 
 #region Observations
 start = time.perf_counter()
-# Compute per-timestep observation probability. Keeps observation frequency density the same independant of TIME_STEP
-obs_freq = np.zeros(NUM_VARIABLES)
-for i in range(0, len(obs_freq)):
-    obs_freq[i] = 5.0
+
   
 p_obs = 1.0 - np.exp(-obs_freq * TIME_STEP)
-
-# Observation noise covariance
-OBS_VARIANCE = 5.0
-R = OBS_VARIANCE * np.eye(NUM_VARIABLES)
 
 observations = [None] * STEPS
 # For each observation keeps track of the indices that correspond to which values where observed
@@ -97,7 +180,7 @@ P[0] = model.distribution.covariance
 
 initial_belief_error = np.zeros((NUM_VARIABLES))
 for i in range(0, NUM_VARIABLES):
-    initial_belief_error[i] = round(abs((mu[0][i] - true_state[0][i]) / true_state[0][i]) * 100, 1)
+    initial_belief_error[i] = round(((mu[0][i] - true_state[0][i]) / true_state[0][i]) * 100, 1)
 
 # Forecast is what the model believes before observation - may be useful to store separately in the future
 # We could propagate foward the forcast a few ms to see what we would have predicted had we not made recent observations
@@ -142,6 +225,6 @@ for k in range(STEPS):
         obs_array[k, observed_idx_list[k]] = observations[k]
 
 from plot import plot_N_variables
-title = model.get_title(OBS_VARIANCE, initial_belief_error)
+title = model.get_title(R, initial_belief_error)
 plot_N_variables(mu, obs_array, true_state, t, NUM_VARIABLES, title, model.variable_names)
 #endregion

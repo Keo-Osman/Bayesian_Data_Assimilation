@@ -7,12 +7,6 @@ from models.abstract_model import *
 from distributions import *
 
 class ModelName(Model):
-    def __init__(self, timestep: float, rng: np.random.Generator):
-        self.NUM_VARIABLES = #...
-        self.TIME_STEP = timestep
-        self.rng = rng
-        self.distribution = #...
-
     def model_step(self):
         # propagate step...
         pass
@@ -24,10 +18,21 @@ class ModelName(Model):
         R_k = self.R[np.ix_(observed_idx, observed_idx)]
         
         #... update step
-        
+    
+    def __init__(self, timestep: float, rng: np.random.Generator):
+        self.NUM_VARIABLES = #...
+        self.TIME_STEP = timestep
+        self.rng = rng
+        self.TRUE_INITIAL = np.array(#...) # Default true value, may be overriden by cmdline arguments in initialise()
+
+    def initialise(self, R: np.ndarray, initial_value: np.ndarray, initial_covariance: np.ndarray, true_initial: np.ndarray):
+        self.R = R
+        self.TRUE_INITIAL = true_initial
+        mu = initial_value
+        P = initial_covariance
+        self.distrubution = #...
     
     def generate_true_data(self, STEPS: int, TIME_STEP: float, t: np.ndarray) -> np.ndarray:
-        TRUE_INTITIAL = np.array(#...)
         true_state = np.zeros((STEPS, self.NUM_VARIABLES))
 
         #... generate true data
@@ -65,10 +70,17 @@ match args.model:
 ```
 
 Then run you model with `python test_bench.py -m MODEL_NAME` it should work from hopefully there with no issue. 
-You can change some configurations in the Observations region
-You can also change R and/or OBS_VARIANCE to change the covariance of the observations. You can also change obs_freq to change how frequently each variable is observed. If you change R, reflect it in you model R.
+You can change some configurations in the observations region.
+You also have the following *optional* command line options
+`-T` for true initial
+`-E` for initial belief error (proportion not percent e.g. 1.0 not 100%) can be negative
+`-O` for observation frequency
+`-R` for measurement covariance
+`-P` for model initial covariance
+You can either put the array full array for this with space separated numbers e.g `-R 1.0 0.1 -2.0` or you can use a single value which will be used for the whole array/covariance e.g. `-R 5.0`.
+*Note that for the covariance arguments the array is the leading diagonal, off diagonal elements will always be 0*
+You can pass any combination of them in in any order, if you don't pass a value in it will be initialised to some default value that is consistent across runs
 
-In the future these should be command line arguments and R will be passed into the models.
 
 If you want to make your own distribution add it into `distributions.py` it can have anything as long as implement a mean and covariance property. This is read only and used when plotting actual estimates you don't have to actually keep track of a mean and covariance. See `ParticleDistribution` for an example of what I mean here.
 
