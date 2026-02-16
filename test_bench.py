@@ -6,7 +6,7 @@ import time
 
 #region Simulation Config
 TIME_STEP = 0.005
-TIME_PERIOD = 50 # seconds
+TIME_PERIOD = 100 # seconds
 STEPS = int(TIME_PERIOD / TIME_STEP)
 RNG_SEED = 1 # Keep a constant to have RNG the exact same across runs - still random but will be consitent
 # RNG_SEED = random.randint(0, 1_000_000) 
