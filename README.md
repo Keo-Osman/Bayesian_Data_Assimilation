@@ -19,17 +19,18 @@ class ModelName(Model):
         
         #... update step
     
-    def __init__(self, timestep: float, rng: np.random.Generator):
+    def __init__(self, rng: np.random.Generator):
         self.NUM_VARIABLES = #...
-        self.TIME_STEP = timestep
         self.rng = rng
         self.TRUE_INITIAL = np.array(#...) # Default true value, may be overriden by cmdline arguments in initialise()
 
-    def initialise(self, R: np.ndarray, initial_value: np.ndarray, initial_covariance: np.ndarray, true_initial: np.ndarray):
+    def initialise(self, Q: np.ndarray, R: np.ndarray, initial_value: np.ndarray, initial_covariance: np.ndarray, true_initial: np.ndarray, timestep: float):
         self.R = R
         self.TRUE_INITIAL = true_initial
         mu = initial_value
         P = initial_covariance
+        self.dt = timestep
+        self.Q = Q * self.dt
         self.distrubution = #...
     
     def generate_true_data(self, STEPS: int, TIME_STEP: float, t: np.ndarray) -> np.ndarray:
@@ -50,6 +51,10 @@ class ModelName(Model):
     @property
     def name(self) -> str:
         return "..."
+
+    @property
+    def data_path(self) -> str:
+        return "path/to/input-data"
 ```
 
 Your model should keep track of it's current estimate distributions internally and `model_step()` and `on_observation` should mutate that internally no need to return it.  
