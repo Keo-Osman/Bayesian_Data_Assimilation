@@ -68,13 +68,14 @@ if (true_initial is -1):
 
 
 t = np.arange(STEPS) * TIME_STEP
+model.initialise(Q, R, initial_value, P, true_initial, TIME_STEP)
 true_state = model.generate_true_data(STEPS, TIME_STEP, t)
 
 end = time.perf_counter()
 print(f'Generating true data took {end - start:.2g}s')
 #endregion
 
-model.initialise(Q, R, initial_value, P, true_initial, TIME_STEP)
+
 
 print(f'Running {model.name}')
 print(f'R = \n{R} \n\nInitial Belief Error = \n{initial_belief_error}\n\nTrue Initial =\n {true_initial} \n\nobs_freq =\n {obs_freq} \n\nP =\n {P}')

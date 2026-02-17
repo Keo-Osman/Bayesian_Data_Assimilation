@@ -80,7 +80,7 @@ def process_args(args, NUM_VARIABLES, model):
         else:
             Q = np.diag(args.q)
     else:
-        Q = 1e-2 * np.eye(NUM_VARIABLES)
+        Q = 1e-9 * np.eye(NUM_VARIABLES)
         
     if (args.p):
         if(len(args.p) == 1):
