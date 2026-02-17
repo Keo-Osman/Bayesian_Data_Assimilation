@@ -23,23 +23,22 @@ class LorenzModel(Model):
         EKF.propagate(self.distribution, transition, J, self.Q)
         self.time += self.dt
 
-    def __init__(self, timestep: float, rng_seed: int):
+    def __init__(self, rng_seed: int):
         self.time = 0
-        self.dt = timestep
         self.NUM_VARIABLES = 3
         self.rng = np.random.default_rng(rng_seed)
         
         self.parameters = [10, 28, 8/3]
-        self.Q = 1e-1 * np.eye(self.NUM_VARIABLES) * self.dt
         self.TRUE_INITIAL = np.array([1.2, -3 , 4.0]) # Default true value, may be overriden by cmdline arguments in initialise()
         
         
-    def initialise(self, R: np.ndarray, initial_value: np.ndarray, initial_covariance: np.ndarray, true_initial: np.ndarray):
+    def initialise(self, Q: np.ndarray, R: np.ndarray, initial_value: np.ndarray, initial_covariance: np.ndarray, true_initial: np.ndarray, timestep: float):
+        self.dt = timestep
         self.R = R
         mu0 = initial_value
         P0 = initial_covariance
         self.TRUE_INITIAL = true_initial
-
+        self.Q = Q * self.dt
         self.distribution = Gaussian(mu0, P0)
         o, r, b = self.parameters
         def dx(t, state):
@@ -82,6 +81,8 @@ class LorenzModel(Model):
     def get_title(self, OBS_VARIANCE: np.ndarray, initial_belief_error: np.ndarray) -> str:
         return f'Lorenz Extended Kalman Filter (EKF) (R={OBS_VARIANCE}, Initial Guess Error (%) {initial_belief_error})'
     
+
+
     @property
     def variable_names(self) -> List[str]:
         return ["X", "Y", "Z"]
@@ -89,3 +90,7 @@ class LorenzModel(Model):
     @property
     def name(self) -> str:
         return "Lorenz Attractor with Extended Kalman Filter"
+    
+    @property
+    def data_path(self) -> str:
+        return "data/true_state/lorenz"

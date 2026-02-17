@@ -37,27 +37,27 @@ class LorenzModel(Model):
         R_k = self.R[np.ix_(observed_idx, observed_idx)]
         EnKF.update(self.distribution, observation, H, R_k, self.rng)
 
-    def __init__(self, timestep: float, rng_seed: int):
+    def __init__(self, rng_seed: int):
         self.time = 0
-        self.dt = timestep
+        
         self.NUM_VARIABLES = 3
         self.rng = np.random.default_rng(rng_seed)
 
-        self.Q = 1e-4 * np.eye(self.NUM_VARIABLES) * self.dt
+        
         self.parameters = [10, 28, 8/3]
         self.NUM_PARTICLES = 20
         self.TRUE_INITIAL = np.array([1.2, -3 , 4.0]) # Default true value, may be overriden by cmdline arguments in initialise()
 
         
         
-    def initialise(self, R: np.ndarray, initial_value: np.ndarray, initial_covariance: np.ndarray, true_initial: np.ndarray):
+    def initialise(self, Q: np.ndarray, R: np.ndarray, initial_value: np.ndarray, initial_covariance: np.ndarray, true_initial: np.ndarray, timestep: float):
         self.R = R
         self.TRUE_INITIAL = true_initial
 
         mu0 = initial_value
         P0 = initial_covariance
-
-        
+        self.dt = timestep
+        self.Q = Q * self.dt
         initial_particles = self.rng.multivariate_normal(mu0, P0, self.NUM_PARTICLES)
         self.distribution = ParticleDistribution(initial_particles)
 
@@ -83,3 +83,7 @@ class LorenzModel(Model):
     @property
     def name(self) -> str:
         return "Lorenz Attractor with Ensemble Kalman Filter"
+    
+    @property
+    def data_path(self) -> str:
+        return "data/true_state/lorenz"
