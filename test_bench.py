@@ -49,7 +49,7 @@ STEPS = int(TIME_PERIOD / TIME_STEP)
 
 #region True Data
 start = time.perf_counter()
-if (true_initial == -1):
+if (true_initial is -1):
     df = pd.read_csv(f"{model.data_path}/{args.true_data}.csv", header=None)
     
     def get_relevant(x):
@@ -165,7 +165,17 @@ for k in range(STEPS):
     if observations[k] is not None:
         obs_array[k, observed_idx_list[k]] = observations[k]
 
+# Calculate
+absolute_error = mu - true_state
+percent_error = 100 * (absolute_error/true_state)
+
+for i, val in enumerate(percent_error):
+    for j, err in enumerate(val):
+        if(np.abs(err) > 50):
+            percent_error[i][j] = np.nan
+
+
 from plot import plot_N_variables
 title = model.get_title(R, initial_belief_error)
-plot_N_variables(mu, obs_array, true_state, t, NUM_VARIABLES, title, model.variable_names)
+plot_N_variables(mu, obs_array, true_state, absolute_error, percent_error, t, NUM_VARIABLES, title, model.variable_names)
 #endregion

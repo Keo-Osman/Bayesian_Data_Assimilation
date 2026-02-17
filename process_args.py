@@ -118,7 +118,7 @@ def process_args(args, NUM_VARIABLES, model):
     else:
         initial_belief_error = np.full(NUM_VARIABLES, 0.1)
 
-    if(true_initial != -1):
+    if(true_initial is not -1):
         initial_value = np.zeros_like(true_initial)
         for i, val in enumerate(true_initial):
             initial_value[i] = val * (1 + initial_belief_error[i]) 
