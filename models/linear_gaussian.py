@@ -26,9 +26,8 @@ class LinearGaussianModel(Model):
         
 
 
-    def __init__(self, timestep: float, rng: np.random.Generator):
+    def __init__(self, rng: np.random.Generator):
         self.NUM_VARIABLES = 3
-        self.TIME_STEP = timestep
         self.rng = rng
         
         # Parameters 
@@ -43,17 +42,17 @@ class LinearGaussianModel(Model):
             [self.b, 0.0, -(self.b+self.c)]
         ])
         
-        self.F = expm(self.A * self.TIME_STEP) # Discretise time - State transition matrix
-        self.Q = 1e-7 * np.identity(self.NUM_VARIABLES) * self.TIME_STEP # Model noise - covariance matrix
+        self.F = expm(self.A * self.dt) # Discretise time - State transition matrix
 
         self.TRUE_INITIAL  = np.array([1.0, -2.3, 5.0]) # Default true value, may be overriden by cmdline arguments in initialise()
 
-    def initialise(self, R: np.ndarray, initial_value: np.ndarray, initial_covariance: np.ndarray, true_initial: np.ndarray):
+    def initialise(self, Q: np.ndarray,  R: np.ndarray, initial_value: np.ndarray, initial_covariance: np.ndarray, true_initial: np.ndarray, timestep: float):
+        self.dt = timestep
         self.R = R
         self.TRUE_INITIAL = true_initial
         mu = initial_value
         P = initial_covariance
-        
+        self.Q = Q * self.dt
         self.distribution = Gaussian(mu, P)
 
     def generate_true_data(self, STEPS: int, TIME_STEP: float, t: np.ndarray) -> np.ndarray:
@@ -77,4 +76,7 @@ class LinearGaussianModel(Model):
     def name(self) -> str:
         return "Linear Oscillator with Kalman Filter"
 
+    @property
+    def data_path(self) -> str:
+        return "data/true_state/linear-oscillator"
 

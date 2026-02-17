@@ -1,6 +1,7 @@
 from models.abstract_model import *
 from distributions import *
 import filters.extended_kalman_filter as EKF 
+from scipy.integrate import solve_ivp, DOP853 
 
 class LorenzModel(Model):
     def model_step(self):
@@ -13,35 +14,41 @@ class LorenzModel(Model):
         ])
 
         J = np.eye(self.NUM_VARIABLES) + self.dt * Jacobian
+        
+        def transition(state_prev):
+            while (self.solver.t <= self.time):
+                self.solver.step()
+            return self.solver.dense_output()(self.time)
 
-        def func(mean: np.ndarray) -> np.ndarray:
-            x, y, z = mean
-            ds = np.array([
-                o*(y - x),
-                x*(r-z) - y,
-                x*y - b*z
-            ]) * self.dt
-            res = mean + ds
-            return res
+        EKF.propagate(self.distribution, transition, J, self.Q)
+        self.time += self.dt
 
-        EKF.propagate(self.distribution, func, J, self.Q)
-
-    def __init__(self, timestep: float, rng_seed: int):
-        self.dt = timestep
+    def __init__(self, rng_seed: int):
+        self.time = 0
         self.NUM_VARIABLES = 3
         self.rng = np.random.default_rng(rng_seed)
         
         self.parameters = [10, 28, 8/3]
-        self.Q = 1e-9 * np.eye(self.NUM_VARIABLES) * self.dt
         self.TRUE_INITIAL = np.array([1.2, -3 , 4.0]) # Default true value, may be overriden by cmdline arguments in initialise()
         
-    def initialise(self, R: np.ndarray, initial_value: np.ndarray, initial_covariance: np.ndarray, true_initial: np.ndarray):
+        
+    def initialise(self, Q: np.ndarray, R: np.ndarray, initial_value: np.ndarray, initial_covariance: np.ndarray, true_initial: np.ndarray, timestep: float):
+        self.dt = timestep
         self.R = R
         mu0 = initial_value
         P0 = initial_covariance
         self.TRUE_INITIAL = true_initial
-
+        self.Q = Q * self.dt
         self.distribution = Gaussian(mu0, P0)
+        o, r, b = self.parameters
+        def dx(t, state):
+            x, y, z = state
+            return np.array([
+                o*(y - x),
+                x*(r-z) - y,
+                x*y - b*z
+            ])
+        self.solver = DOP853(dx, 0, mu0, np.inf, rtol=1e-10, atol=1e-12)
 
     def on_observation(self, observation, observed_idx):
         # Build H and R_k based on observation indices
@@ -49,30 +56,33 @@ class LorenzModel(Model):
         R_k = self.R[np.ix_(observed_idx, observed_idx)]
 
         EKF.update(self.distribution, observation, H, R_k)
-
-    def generate_true_data(self, STEPS: int, TIME_STEP: float, t: np.ndarray) -> np.ndarray:
-        true_state = np.zeros((STEPS, self.NUM_VARIABLES))
-        true_state[0] = self.TRUE_INITIAL
-
-        def lorenz(vec):
-            o, r, b = [10, 28, 8/3]
-            x, y, z = vec
-            ds = np.array([
+        o, r, b = self.parameters
+        def dx(t, state):
+            x, y, z = state
+            return np.array([
                 o*(y - x),
                 x*(r-z) - y,
                 x*y - b*z
-            ]) * TIME_STEP
-            res = vec + ds
-            return res
-        
-        for i in range(1, len(true_state)):
-            true_state[i] = lorenz(true_state[i-1])
+            ])
+        self.solver = DOP853(dx, self.time, self.distribution.mean, np.inf, rtol=1e-10, atol=1e-12)
 
-        return true_state
+    def generate_true_data(self, STEPS: int, TIME_STEP: float, t_arr: np.ndarray) -> np.ndarray:
+        o, r, b = self.parameters
+        def dx(t, state):
+            x, y, z = state
+            return np.array([
+                o*(y - x),
+                x*(r-z) - y,
+                x*y - b*z
+            ])
+        time = STEPS * TIME_STEP
+        return solve_ivp(dx, (0, time), self.TRUE_INITIAL, method='DOP853', t_eval=t_arr).y.T
 
     def get_title(self, OBS_VARIANCE: np.ndarray, initial_belief_error: np.ndarray) -> str:
         return f'Lorenz Extended Kalman Filter (EKF) (R={OBS_VARIANCE}, Initial Guess Error (%) {initial_belief_error})'
     
+
+
     @property
     def variable_names(self) -> List[str]:
         return ["X", "Y", "Z"]
@@ -80,3 +90,7 @@ class LorenzModel(Model):
     @property
     def name(self) -> str:
         return "Lorenz Attractor with Extended Kalman Filter"
+    
+    @property
+    def data_path(self) -> str:
+        return "data/true_state/lorenz"
