@@ -1,4 +1,3 @@
-# This python script takes in a model and runs relevant simulations using it.
 from abc import ABC, abstractmethod
 import numpy as np
 from typing import List

@@ -6,6 +6,24 @@ from scipy.integrate import solve_ivp, DOP853
 class LorenzModel(Model):
     def model_step(self):
         o, r, b = self.parameters
+
+        def dx(t, state):
+            x, y, z = state
+            return np.array([
+                o*(y - x),
+                x*(r-z) - y,
+                x*y - b*z
+            ])
+        
+        t0 = self.time
+        tf = self.time + self.dt
+
+        def transition(particle: np.ndarray) -> np.ndarray:
+            solver = DOP853(dx, t0, particle, tf, rtol=1e-10, atol=1e-12)
+            while solver.status == 'running':
+                solver.step()
+            return solver.y
+
         x, y, z = self.distribution.mean
         Jacobian = np.array([
             [-o, o, 0],
@@ -15,13 +33,8 @@ class LorenzModel(Model):
 
         J = np.eye(self.NUM_VARIABLES) + self.dt * Jacobian
         
-        def transition(state_prev):
-            while (self.solver.t <= self.time):
-                self.solver.step()
-            return self.solver.dense_output()(self.time)
-
         EKF.propagate(self.distribution, transition, J, self.Q)
-        self.time += self.dt
+        self.time =tf
 
     def __init__(self, rng_seed: int):
         self.time = 0
@@ -35,20 +48,14 @@ class LorenzModel(Model):
     def initialise(self, Q: np.ndarray, R: np.ndarray, initial_value: np.ndarray, initial_covariance: np.ndarray, true_initial: np.ndarray, timestep: float):
         self.dt = timestep
         self.R = R
-        mu0 = initial_value
-        P0 = initial_covariance
-        self.TRUE_INITIAL = true_initial
         self.Q = Q * self.dt
-        self.distribution = Gaussian(mu0, P0)
-        o, r, b = self.parameters
-        def dx(t, state):
-            x, y, z = state
-            return np.array([
-                o*(y - x),
-                x*(r-z) - y,
-                x*y - b*z
-            ])
-        self.solver = DOP853(dx, 0, mu0, np.inf, rtol=1e-10, atol=1e-12)
+
+        self.TRUE_INITIAL = true_initial
+        mu = initial_value
+        P = initial_covariance
+
+        self.Q = Q * self.dt
+        self.distribution = Gaussian(mu, P)
 
     def on_observation(self, observation, observed_idx):
         # Build H and R_k based on observation indices
@@ -80,8 +87,6 @@ class LorenzModel(Model):
 
     def get_title(self, OBS_VARIANCE: np.ndarray, initial_belief_error: np.ndarray) -> str:
         return f'Lorenz Extended Kalman Filter (EKF) (R={OBS_VARIANCE}, Initial Guess Error (%) {initial_belief_error})'
-    
-
 
     @property
     def variable_names(self) -> List[str]:

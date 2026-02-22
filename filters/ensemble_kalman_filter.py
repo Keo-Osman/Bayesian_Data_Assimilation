@@ -1,8 +1,8 @@
 from distributions import *
 
-def propagate(distribution: ParticleDistribution, function, Q: np.ndarray, rng: np.random.Generator):
+def propagate(distribution: ParticleDistribution, transition, Q: np.ndarray, rng: np.random.Generator):
     for i, particle in enumerate(distribution.particles):
-        distribution.particles[i] = function(particle) + rng.multivariate_normal(np.zeros(len(particle)), Q)
+        distribution.particles[i] = transition(particle) + rng.multivariate_normal(np.zeros(len(particle)), Q)
 
 
 def update(distribution: ParticleDistribution, observation: np.ndarray, 

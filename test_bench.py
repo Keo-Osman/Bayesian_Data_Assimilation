@@ -4,7 +4,6 @@ import sys
 import random
 import time
 
-
 #region Simulation Config
 TIME_STEP = 0.005
 TIME_PERIOD = 35 # seconds
@@ -49,22 +48,25 @@ STEPS = int(TIME_PERIOD / TIME_STEP)
 
 #region True Data
 start = time.perf_counter()
-if (true_initial is -1):
-    df = pd.read_csv(f"{model.data_path}/{args.true_data}.csv", header=None)
-    
-    def get_relevant(x):
-        if (int(x[0] / TIME_STEP) == (x[0] / TIME_STEP) and x[0] <= TIME_PERIOD):
-            return True
-        return False
-    
+try:
+    if (true_initial == -1):
+        df = pd.read_csv(f"{model.data_path}/{args.true_data}.csv", header=None)
+        
+        def get_relevant(x):
+            if (int(x[0] / TIME_STEP) == (x[0] / TIME_STEP) and x[0] <= TIME_PERIOD):
+                return True
+            return False
+        
 
-    data = np.array(list(filter(get_relevant, df.to_numpy())))
-    true_state = data.T[1:].T
-    true_initial = true_state[0]
+        data = np.array(list(filter(get_relevant, df.to_numpy())))
+        true_state = data.T[1:].T
+        true_initial = true_state[0]
 
-    initial_value = np.zeros_like(true_initial)
-    for i, val in enumerate(true_initial):
-        initial_value[i] = val * (1 + initial_belief_error[i]) 
+        initial_value = np.zeros_like(true_initial)
+        for i, val in enumerate(true_initial):
+            initial_value[i] = val * (1 + initial_belief_error[i]) 
+except:
+    pass
 
 
 t = np.arange(STEPS) * TIME_STEP
@@ -74,22 +76,15 @@ true_state = model.generate_true_data(STEPS, TIME_STEP, t)
 end = time.perf_counter()
 print(f'Generating true data took {end - start:.2g}s')
 #endregion
-
-
-
-print(f'Running {model.name}')
-print(f'R = \n{R} \n\nInitial Belief Error = \n{initial_belief_error}\n\nTrue Initial =\n {true_initial} \n\nobs_freq =\n {obs_freq} \n\nP =\n {P}')
 #endregion
 
 #region Observations
 start = time.perf_counter()
-
-p_obs = 1.0 - np.exp(-obs_freq * TIME_STEP)
+p_obs = obs_freq * TIME_STEP
 
 observations = [None] * STEPS
 # For each observation keeps track of the indices that correspond to which values where observed
 observed_idx_list = [None] * STEPS 
-
 
 for k in range(STEPS):
     observed_mask = rng.random(NUM_VARIABLES) < p_obs
@@ -111,6 +106,9 @@ for k in range(STEPS):
 end = time.perf_counter()
 print(f'Generating observation data took {end - start:.2g}s')
 #endregion
+
+print(f'Running {model.name}')
+print(f'R = \n{R} \n\nInitial Belief Error = \n{initial_belief_error}\n\nTrue Initial =\n {true_initial} \n\nobs_freq =\n {obs_freq} \n\nP =\n {P}')
 
 #region Initial Beliefs
 mu = np.zeros_like(true_state)

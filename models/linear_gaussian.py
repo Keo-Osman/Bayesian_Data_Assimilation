@@ -24,8 +24,6 @@ class LinearGaussianModel(Model):
         
         KF.update(self.distribution, observation, H, R_k)
         
-
-
     def __init__(self, rng: np.random.Generator):
         self.NUM_VARIABLES = 3
         self.rng = rng
@@ -42,18 +40,18 @@ class LinearGaussianModel(Model):
             [self.b, 0.0, -(self.b+self.c)]
         ])
         
-        
-
         self.TRUE_INITIAL  = np.array([1.0, -2.3, 5.0]) # Default true value, may be overriden by cmdline arguments in initialise()
 
     def initialise(self, Q: np.ndarray,  R: np.ndarray, initial_value: np.ndarray, initial_covariance: np.ndarray, true_initial: np.ndarray, timestep: float):
         self.dt = timestep
-        self.F = expm(self.A * self.dt) # Discretise time - State transition matrix
         self.R = R
+        self.Q = Q * self.dt
+
         self.TRUE_INITIAL = true_initial
         mu = initial_value
         P = initial_covariance
-        self.Q = Q * self.dt
+
+        self.F = expm(self.A * self.dt) # Matrix exponential to solve ODE analytically
         self.distribution = Gaussian(mu, P)
 
     def generate_true_data(self, STEPS: int, TIME_STEP: float, t: np.ndarray) -> np.ndarray:
@@ -71,7 +69,6 @@ class LinearGaussianModel(Model):
     @property
     def variable_names(self) -> List[str]:
         return ["X", "Y", "Z"]
-    
     
     @property
     def name(self) -> str:

@@ -18,17 +18,14 @@ class LorenzModel(Model):
         t0 = self.time
         tf = self.time + self.dt
 
-        def func(particle: np.ndarray) -> np.ndarray:
+        def transition(particle: np.ndarray) -> np.ndarray:
             solver = DOP853(dx, t0, particle, tf, rtol=1e-10, atol=1e-12)
             while solver.status == 'running':
                 solver.step()
             return solver.y
 
-        EnKF.propagate(self.distribution, func, self.Q, self.rng)
-
+        EnKF.propagate(self.distribution, transition, self.Q, self.rng)
         self.time = tf
-
-        
 
 
     def on_observation(self, observation, observed_idx):
@@ -38,27 +35,24 @@ class LorenzModel(Model):
         EnKF.update(self.distribution, observation, H, R_k, self.rng)
 
     def __init__(self, rng_seed: int):
-        self.time = 0
-        
         self.NUM_VARIABLES = 3
         self.rng = np.random.default_rng(rng_seed)
+        self.time = 0
 
-        
         self.parameters = [10, 28, 8/3]
         self.NUM_PARTICLES = 20
         self.TRUE_INITIAL = np.array([1.2, -3 , 4.0]) # Default true value, may be overriden by cmdline arguments in initialise()
-
-        
         
     def initialise(self, Q: np.ndarray, R: np.ndarray, initial_value: np.ndarray, initial_covariance: np.ndarray, true_initial: np.ndarray, timestep: float):
-        self.R = R
-        self.TRUE_INITIAL = true_initial
-
-        mu0 = initial_value
-        P0 = initial_covariance
         self.dt = timestep
+        self.R = R
         self.Q = Q * self.dt
-        initial_particles = self.rng.multivariate_normal(mu0, P0, self.NUM_PARTICLES)
+
+        self.TRUE_INITIAL = true_initial
+        mu = initial_value
+        P = initial_covariance
+
+        initial_particles = self.rng.multivariate_normal(mu, P, self.NUM_PARTICLES)
         self.distribution = ParticleDistribution(initial_particles)
 
     def generate_true_data(self, STEPS: int, TIME_STEP: float, t_arr: np.ndarray) -> np.ndarray:

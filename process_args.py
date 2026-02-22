@@ -56,43 +56,35 @@ def add_args():
     )
     return parser
 
+def get_matrix_arg(arg, NUM_VARIABLES: int, default_value_scalar: float) -> np.ndarray:
+    if(not arg):
+        return default_value_scalar * np.eye(NUM_VARIABLES)
+    
+    if(len(arg) == 1):
+        return arg[0] * np.eye(NUM_VARIABLES)
+    if(len(arg) == NUM_VARIABLES):
+        return np.diag(arg)
+    print("!!Wrong amount of variables in argument!!")
+    sys.exit()
+
+def get_array_arg(arg, NUM_VARIABLES: int, default_value: float) -> np.ndarray:
+    if(not arg):
+        return
+    
+    if(len(arg) == 1):
+        return np.full(NUM_VARIABLES, arg[0])
+    if(len(arg) == NUM_VARIABLES):
+        return np.array(arg)
+
 def process_args(args, NUM_VARIABLES, model):
     if(args.true_data and args.i):
             print("Can not have both -t and -T")
 
-    if (args.r):
-        if(len(args.r) == 1):
-            R = args.r[0] * np.eye(NUM_VARIABLES)
-        elif(len(args.r) != NUM_VARIABLES):
-            print(f'R should have {NUM_VARIABLES} variables!')
-            sys.exit()
-        else:
-            R = np.diag(args.r)
-    else:
-        R = 2 * np.eye(NUM_VARIABLES)
-    
-    if (args.q):
-        if(len(args.q) == 1):
-            Q = args.q[0] * np.eye(NUM_VARIABLES)
-        elif(len(args.q) != NUM_VARIABLES):
-            print(f'Q should have {NUM_VARIABLES} variables!')
-            sys.exit()
-        else:
-            Q = np.diag(args.q)
-    else:
-        Q = 1e-9 * np.eye(NUM_VARIABLES)
-        
-    if (args.p):
-        if(len(args.p) == 1):
-            P = args.p[0] * np.eye(NUM_VARIABLES)
-        elif(len(args.p) != NUM_VARIABLES):
-            print(f'P should have {NUM_VARIABLES} variables!')
-            sys.exit()
-        else:
-            P = np.diag(args.p)
-    else:
-        P = 2 * np.eye(NUM_VARIABLES)
 
+    R = get_matrix_arg(args.r, NUM_VARIABLES, 2)
+    Q = get_matrix_arg(args.q, NUM_VARIABLES, 1e-9)
+    P = get_matrix_arg(args.p, NUM_VARIABLES, 2)
+        
     if (args.i):
         if(len(args.i) == 1):
             true_initial = np.full(NUM_VARIABLES, args.i[0])
@@ -107,34 +99,18 @@ def process_args(args, NUM_VARIABLES, model):
         else:
             true_initial = model.TRUE_INITIAL
 
-    if (args.e):
-        if (len(args.e) == 1):
-            initial_belief_error = np.full(NUM_VARIABLES, args.e[0])
-        elif (len(args.e) != NUM_VARIABLES):
-            print(f'initial_belief_error should have {NUM_VARIABLES} variables!')
-            sys.exit()
-        else:
-            initial_belief_error = np.array(args.e)
-    else:
-        initial_belief_error = np.full(NUM_VARIABLES, 0.1)
+    initial_belief_error = get_array_arg(args.e, NUM_VARIABLES, 0.1)
 
-    if(true_initial is not -1):
+
+    try:
+        if(true_initial == -1):
+            pass
+    except:
         initial_value = np.zeros_like(true_initial)
         for i, val in enumerate(true_initial):
             initial_value[i] = val * (1 + initial_belief_error[i]) 
-    else:
-        initial_value = -1
 
-    if (args.o):
-        if(len(args.o) == 1):
-            obs_freq = np.full(NUM_VARIABLES, args.o[0])
-        elif (len(args.o) != NUM_VARIABLES):
-            print(f'obs_freq should have {NUM_VARIABLES} variables!')
-            sys.exit()
-        else:
-            obs_freq = np.array(args.o)
-    else:
-        obs_freq = np.full(NUM_VARIABLES, 2.0)
+    obs_freq = get_array_arg(args.o, NUM_VARIABLES, 2.0)
 
     if(args.dt):
         time_step = float(args.dt)
