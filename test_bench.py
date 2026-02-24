@@ -14,7 +14,7 @@ rng = np.random.default_rng(RNG_SEED)
 #endregion
 
 #region Command Line Arguments and Model Setup
-model_list = ["linear", "lorenz-EnKF", "lorenz-EKF"]
+model_list = ["linear", "lorenz-EnKF", "lorenz-EKF", "lorenz-PF"]
 from process_args import process_args, add_args
 
 parser = add_args()
@@ -26,12 +26,14 @@ if (args.list_models):
     sys.exit()
 
 
-from models import linear_gaussian, lorenz_attractor_EnKF, lorenz_attractor_EKF
+from models import linear_gaussian, lorenz_attractor_EnKF, lorenz_attractor_EKF, lorenz_attractor_PF
 match args.model:
     case "lorenz-EnKF":
         model = lorenz_attractor_EnKF.LorenzModel(RNG_SEED)
     case "lorenz-EKF":
         model = lorenz_attractor_EKF.LorenzModel(RNG_SEED)
+    case "lorenz-PF":
+        model = lorenz_attractor_PF.LorenzModel(RNG_SEED)
     case "linear":
         model = linear_gaussian.LinearGaussianModel(RNG_SEED)
 NUM_VARIABLES = model.NUM_VARIABLES
