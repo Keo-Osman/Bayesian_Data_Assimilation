@@ -85,14 +85,15 @@ def process_args(args, NUM_VARIABLES, model):
     Q = get_matrix_arg(args.q, NUM_VARIABLES, 1e-9)
     P = get_matrix_arg(args.p, NUM_VARIABLES, 2)
         
-    if (args.i):
+    if (args.i):    
         if(len(args.i) == 1):
             true_initial = np.full(NUM_VARIABLES, args.i[0])
         elif (len(args.i) != NUM_VARIABLES):
             print(f'T should have {NUM_VARIABLES} variables!')
             sys.exit()
         else:
-            true_initial = args.i
+            true_initial = np.array(args.i)
+            print(args.i)
     else:
         if(args.true_data):
             true_initial = -1 # Read from CSV Later
@@ -101,11 +102,15 @@ def process_args(args, NUM_VARIABLES, model):
 
     initial_belief_error = get_array_arg(args.e, NUM_VARIABLES, 0.1)
 
-
+    print(true_initial)
     try:
+        print("yo")
         if(true_initial == -1):
+            print("ro")
             pass
+        print("bro")
     except:
+        print(true_initial)
         initial_value = np.zeros_like(true_initial)
         for i, val in enumerate(true_initial):
             initial_value[i] = val * (1 + initial_belief_error[i]) 
