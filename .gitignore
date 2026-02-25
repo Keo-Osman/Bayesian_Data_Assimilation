@@ -1,5 +1,3 @@
 __pycache__
-t.py
-transitions.py
-*.html
+performance_profiling
 *.prof
